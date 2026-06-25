@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Masuk — SIRI-DLHK</title>
+  <link rel="icon" type="image/png" href="./img/logo-kota-jayapura.png"/>
+  <link rel="apple-touch-icon" href="./img/logo-kota-jayapura.png"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    [x-cloak] { display: none !important; }
+    input:focus, select:focus { outline:none; border-color:#22c55e; }
+    .btn-primary   { background:#22c55e; color:#fff; }
+    .btn-primary:hover { background:#16a34a; }
+    .captcha-box {
+      font-family: 'Courier New', monospace;
+      letter-spacing: .35em;
+      font-weight: 700;
+      font-size: 1.4rem;
+      color:#166534;
+      background: repeating-linear-gradient(45deg,#f0fdf4,#f0fdf4 6px,#dcfce7 6px,#dcfce7 12px);
+      user-select: none;
+      text-decoration: line-through;
+      text-decoration-color: rgba(34,197,94,.4);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-green-50 via-gray-50 to-sky-50 min-h-screen flex items-center justify-center p-4 font-sans antialiased text-gray-700"
+  x-data="login()" x-cloak>
+
+  <div class="w-full max-w-md">
+    <!-- Brand -->
+    <div class="flex flex-col items-center mb-6">
+      <div class="w-16 h-16 rounded-xl bg-white flex items-center justify-center shadow-lg shadow-green-200 mb-3 overflow-hidden p-1.5">
+        <img src="./img/logo-kota-jayapura.png" alt="Logo Kota Jayapura" class="w-full h-full object-contain"/>
+      </div>
+      <h1 class="font-bold text-green-700 text-lg">SIRI-DLHK</h1>
+      <p class="text-gray-400 text-xs">Sistem Informasi Retribusi Sampah Rumah Tangga · Kota Jayapura</p>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+      <div class="mb-5">
+        <p class="font-semibold text-gray-800">Masuk ke Akun</p>
+        <p class="text-xs text-gray-400">Silakan pilih peran dan masukkan kredensial Anda</p>
+      </div>
+
+      <!-- Role selector -->
+      <div class="mb-4">
+        <label class="text-xs font-medium text-gray-600 block mb-1">Masuk Sebagai</label>
+        <select x-model="role" @change="error=''"
+          class="w-full border border-gray-200 rounded-md px-3 py-2.5 text-sm bg-gray-50 cursor-pointer">
+          <option value="admin">Admin Master</option>
+          <option value="dlhk">Operator DLHK</option>
+          <option value="kelurahan">Operator Desa</option>
+          <option value="klien">Klien</option>
+        </select>
+      </div>
+
+      <form @submit.prevent="submit()" class="space-y-4">
+        <!-- KLIEN: NPWRD -->
+        <template x-if="role==='klien'">
+          <div>
+            <label class="text-xs font-medium text-gray-600 block mb-1">NPWRD</label>
+            <div class="relative">
+              <i class="fa-solid fa-id-card absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+              <input type="text" x-model="npwrd" placeholder="9471.00.0000" autocomplete="off"
+                class="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-md bg-gray-50 font-mono"/>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-1">Gunakan nomor NPWRD yang tertera pada kartu retribusi Anda.</p>
+          </div>
+        </template>
+
+        <!-- OPERATOR / ADMIN: Username + Password -->
+        <template x-if="role!=='klien'">
+          <div class="space-y-4">
+            <div>
+              <label class="text-xs font-medium text-gray-600 block mb-1">Username</label>
+              <div class="relative">
+                <i class="fa-solid fa-user absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input type="text" x-model="username" placeholder="username" autocomplete="off"
+                  class="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-md bg-gray-50"/>
+              </div>
+            </div>
+            <div>
+              <label class="text-xs font-medium text-gray-600 block mb-1">Password</label>
+              <div class="relative">
+                <i class="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input :type="showPass?'text':'password'" x-model="password" placeholder="••••••••"
+                  class="w-full pl-9 pr-9 py-2.5 text-sm border border-gray-200 rounded-md bg-gray-50"/>
+                <button type="button" @click="showPass=!showPass"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <i :class="showPass?'fa-solid fa-eye-slash':'fa-solid fa-eye'" class="text-sm"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- RANDOM CODE (semua role) -->
+        <div>
+          <label class="text-xs font-medium text-gray-600 block mb-1">Kode Verifikasi</label>
+          <div class="flex items-center gap-2 mb-2">
+            <div class="captcha-box flex-1 text-center py-2.5 rounded-md border border-green-200" x-text="captcha"></div>
+            <button type="button" @click="genCaptcha()" title="Buat kode baru"
+              class="w-11 h-11 rounded-md border border-gray-200 text-gray-500 hover:text-green-600 hover:border-green-300 transition flex items-center justify-center">
+              <i class="fa-solid fa-rotate"></i>
+            </button>
+          </div>
+          <input type="text" x-model="codeInput" placeholder="Ketik kode di atas" autocomplete="off"
+            class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-md bg-gray-50 tracking-widest uppercase"/>
+        </div>
+
+        <!-- Error -->
+        <template x-if="error">
+          <div class="bg-red-50 border border-red-200 rounded-md px-3 py-2 flex items-center gap-2">
+            <i class="fa-solid fa-circle-exclamation text-red-500 text-sm"></i>
+            <p class="text-xs text-red-600" x-text="error"></p>
+          </div>
+        </template>
+
+        <button type="submit"
+          class="btn-primary w-full py-2.5 rounded-md text-sm font-semibold flex items-center justify-center gap-2">
+          <i class="fa-solid fa-right-to-bracket"></i> Masuk
+        </button>
+      </form>
+
+      <p class="text-[10px] text-gray-400 text-center mt-4">
+        <i class="fa-solid fa-circle-info"></i> Halaman ini hanya simulasi — kredensial apa pun akan diterima selama kode verifikasi benar.
+      </p>
+    </div>
+
+    <p class="text-center text-[11px] text-gray-400 mt-5">© 2025 Dinas Lingkungan Hidup &amp; Kebersihan Kota Jayapura</p>
+    <a href="https://nokensoft.com" target="_blank" rel="noopener noreferrer"
+      class="flex items-center justify-center gap-2 text-[11px] text-gray-400 hover:text-green-600 transition mt-2">
+      <img src="./img/logo-nokensoft.jpg" alt="Logo Nokensoft" class="h-5 w-auto object-contain rounded"/>
+      <span>Powered by <span class="font-semibold">Nokensoft.com</span></span>
+    </a>
+  </div>
+
+<script>
+function login() {
+  return {
+    role: 'admin',
+    npwrd: '',
+    username: '',
+    password: '',
+    showPass: false,
+    captcha: '',
+    codeInput: '',
+    error: '',
+
+    init() { this.genCaptcha(); },
+
+    genCaptcha() {
+      const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+      let c = '';
+      for (let i = 0; i < 5; i++) c += chars[Math.floor(Math.random() * chars.length)];
+      this.captcha = c;
+      this.codeInput = '';
+    },
+
+    submit() {
+      this.error = '';
+      // Validasi kredensial dasar
+      if (this.role === 'klien') {
+        if (!this.npwrd.trim()) { this.error = 'NPWRD wajib diisi.'; return; }
+      } else {
+        if (!this.username.trim()) { this.error = 'Username wajib diisi.'; return; }
+        if (!this.password.trim()) { this.error = 'Password wajib diisi.'; return; }
+      }
+      // Validasi kode verifikasi
+      if (this.codeInput.trim().toUpperCase() !== this.captcha) {
+        this.error = 'Kode verifikasi salah. Silakan coba lagi.';
+        this.genCaptcha();
+        return;
+      }
+      // Simulasi sukses → masuk ke dasbor sesuai role
+      try {
+        localStorage.setItem('siri_role', this.role);
+        localStorage.setItem('siri_user', this.role === 'klien' ? this.npwrd : this.username);
+      } catch (e) {}
+      window.location.href = 'index.html?role=' + encodeURIComponent(this.role);
+    },
+  }
+}
+</script>
+</body>
+</html>
